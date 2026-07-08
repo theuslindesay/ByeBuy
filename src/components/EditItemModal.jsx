@@ -1,149 +1,210 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 
-export default function EditItemModal({ isOpen, item, onClose, onUpdated }) {
+const CATEGORIES = [
+  'Roupas',
+  'Calçados',
+  'Eletrônicos',
+  'Móveis',
+  'Livros',
+  'Brinquedos',
+  'Alimentos',
+  'Higiene e Limpeza',
+  'Utensílios Domésticos',
+  'Outros'
+];
+
+export default function EditItemModal({ isOpen, onClose, item, onUpdated }) {
   const [formData, setFormData] = useState({
-    title: item && item.title ? item.title : '',
-    category: item && item.category ? item.category : '',
-    condition: item && item.condition ? item.condition : '',
-    total_needed: item && item.total_needed ? item.total_needed : '',
-    reason: item && item.reason ? item.reason : ''
+    title: '',
+    category: '',
+    condition: 'Novo',
+    total: '',
+    reason: ''
   });
 
   const [loading, setLoading] = useState(false);
-  const [feedback, setFeedback] = useState(null);
 
-  if (!isOpen || !item) {
-    return null;
-  }
+  useEffect(() => {
+    if (isOpen && item) {
+      setFormData({
+        title: item.title || '',
+        category: item.category || '',
+        condition: item.condition || 'Novo',
+        total: item.total_needed != null ? String(item.total_needed) : '',
+        reason: item.reason || ''
+      });
+    } else if (!isOpen) {
+      setFormData({ title: '', category: '', condition: 'Novo', total: '', reason: '' });
+    }
+  }, [isOpen, item]);
+
+  if (!isOpen || !item) return null;
+
+  const isOng = item.type === 'need';
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setFeedback(null);
 
-    const updates = {
+    if (!formData.title.trim()) {
+      alert('Preencha o título.');
+      return;
+    }
+
+    if (!formData.category) {
+      alert('Selecione uma categoria.');
+      return;
+    }
+
+    let parsedTotal = item.total_needed;
+
+    if (isOng) {
+      parsedTotal = parseInt(formData.total, 10);
+
+      if (!formData.total || isNaN(parsedTotal) || parsedTotal < 1) {
+        alert('A meta deve ser um número igual ou maior que 1.');
+        return;
+      }
+
+      if (!formData.reason.trim()) {
+        alert('Descreva o motivo do pedido.');
+        return;
+      }
+    }
+
+    setLoading(true);
+
+    const updateData = {
       title: formData.title,
       category: formData.category,
-      condition: item.type === 'donation' ? formData.condition : null,
-      total_needed: item.type === 'need' ? parseInt(formData.total_needed) : null,
-      reason: item.type === 'need' ? formData.reason : null
+      condition: isOng ? null : formData.condition,
+      total_needed: isOng ? parsedTotal : null,
+      reason: isOng ? formData.reason.trim() : null
     };
 
     const { error } = await supabase
       .from('items')
-      .update(updates)
+      .update(updateData)
       .eq('id', item.id);
 
     setLoading(false);
 
     if (error) {
-      setFeedback({ type: 'error', message: 'Erro ao atualizar: ' + error.message });
-    } else {
-      setFeedback({ type: 'success', message: 'Item atualizado com sucesso!' });
-      
-      setTimeout(() => {
-        setFeedback(null);
-        onUpdated();
-        onClose();
-      }, 1500);
+      alert('Erro ao atualizar: ' + error.message);
+      return;
     }
+
+    if (onUpdated) onUpdated();
+    onClose();
   };
 
   return (
     <div className="modal">
-      <div className="modal-content">
-        <span className="close-modal" onClick={onClose}>&times;</span>
+      <div className="modal-content" style={{ maxWidth: '560px' }}>
+        <button className="close-modal" onClick={onClose}>
+          ×
+        </button>
 
-        <h2>Editar item</h2>
+        <h2 style={{ marginBottom: '8px' }}>Editar Publicação</h2>
 
-        {feedback && (
-          <div
-            style={{
-              padding: '12px 16px',
-              borderRadius: '10px',
-              marginBottom: '18px',
-              background: feedback.type === 'error' ? '#fff3f3' : '#f1f7ea',
-              color: feedback.type === 'error' ? '#d96b6b' : '#6a8c3a',
-              border: `1px solid ${feedback.type === 'error' ? '#fcdede' : '#dcedc8'}`,
-              fontWeight: '500',
-              fontSize: '0.95rem',
-              textAlign: 'center'
-            }}
-          >
-            {feedback.message}
-          </div>
-        )}
+        <p style={{ color: '#666', marginBottom: '20px' }}>
+          {isOng
+            ? 'Atualize as informações do pedido da sua instituição.'
+            : 'Atualize as informações do item que você está doando.'}
+        </p>
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Título</label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={function (e) {
-                setFormData({ ...formData, title: e.target.value });
-              }}
-              required
-            />
-          </div>
+          <label>Título</label>
+          <input
+            type="text"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            required
+          />
 
-          <div className="form-group">
-            <label>Categoria</label>
-            <input
-              type="text"
-              value={formData.category}
-              onChange={function (e) {
-                setFormData({ ...formData, category: e.target.value });
-              }}
-              required
-            />
-          </div>
+          <label>Categoria</label>
+          <select
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Selecione uma categoria...</option>
+            {CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
 
-          {item.type === 'donation' && (
-            <div className="form-group">
+          {!isOng && (
+            <>
               <label>Condição</label>
               <select
+                name="condition"
                 value={formData.condition}
-                onChange={function (e) {
-                  setFormData({ ...formData, condition: e.target.value });
-                }}
+                onChange={handleChange}
               >
                 <option value="Novo">Novo</option>
-                <option value="Usado">Usado</option>
+                <option value="Usado - Bom estado">Usado - Bom estado</option>
+                <option value="Usado - Precisa de reparo">Usado - Precisa de reparo</option>
               </select>
-            </div>
+            </>
           )}
 
-          {item.type === 'need' && (
-            <div>
-              <div className="form-group">
-                <label>Meta total</label>
-                <input
-                  type="number"
-                  value={formData.total_needed}
-                  onChange={function (e) {
-                    setFormData({ ...formData, total_needed: e.target.value });
-                  }}
-                  required
-                />
-              </div>
+          {isOng && (
+            <>
+              <label>Meta (quantidade necessária)</label>
+              <input
+                type="number"
+                name="total"
+                value={formData.total}
+                onChange={handleChange}
+                min="1"
+                step="1"
+                placeholder="Ex: 50"
+                required
+              />
 
-              <div className="form-group">
-                <label>Motivo do pedido</label>
-                <textarea
-                  value={formData.reason}
-                  onChange={function (e) {
-                    setFormData({ ...formData, reason: e.target.value });
-                  }}
-                ></textarea>
-              </div>
-            </div>
+              <label>Motivo do Pedido</label>
+              <textarea
+                name="reason"
+                value={formData.reason}
+                onChange={handleChange}
+                rows="4"
+                placeholder="Explique por que sua instituição precisa desses itens..."
+                style={{ resize: 'none' }}
+                required
+              />
+            </>
           )}
 
-          <button type="submit" className="btn-submit" disabled={loading}>
-            {loading ? 'Salvando...' : 'Salvar alterações'}
-          </button>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+            <button
+              type="button"
+              className="btn-outline"
+              onClick={onClose}
+              disabled={loading}
+              style={{ flex: 1, padding: '13px' }}
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              className="btn-submit"
+              disabled={loading}
+              style={{ flex: 1, padding: '13px' }}
+            >
+              {loading ? 'Salvando...' : 'Salvar Alterações'}
+            </button>
+          </div>
         </form>
       </div>
     </div>

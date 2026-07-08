@@ -4,6 +4,19 @@ import ItemDetailsModal from './ItemDetailsModal';
 import ConfirmContributionModal from './ConfirmContributionModal';
 import EditItemModal from './EditItemModal';
 
+const CATEGORIES = [
+  'Roupas',
+  'Calçados',
+  'Eletrônicos',
+  'Móveis',
+  'Livros',
+  'Brinquedos',
+  'Alimentos',
+  'Higiene e Limpeza',
+  'Utensílios Domésticos',
+  'Outros'
+];
+
 export default function Feed({ currentUser, onOpenChat, refreshKey }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +68,7 @@ export default function Feed({ currentUser, onOpenChat, refreshKey }) {
 
   const executeDelete = async (itemId) => {
     setDialogConfig(null);
-    
+
     const { error } = await supabase
       .from('items')
       .delete()
@@ -105,8 +118,6 @@ export default function Feed({ currentUser, onOpenChat, refreshKey }) {
     return matchesSearch && matchesCategory && matchesType;
   });
 
-  const uniqueCategories = ['todas', ...new Set(items.map(item => item.category).filter(Boolean))];
-
   const openDetails = (item) => {
     setSelectedItem(item);
     setIsDetailsOpen(true);
@@ -139,27 +150,27 @@ export default function Feed({ currentUser, onOpenChat, refreshKey }) {
 
   return (
     <section style={{ padding: '20px 40px 50px' }}>
-      
+
       {dialogConfig && (
         <div className="modal" style={{ zIndex: 9999 }}>
           <div className="modal-content" style={{ maxWidth: '420px', padding: '30px', textAlign: 'center', borderRadius: '22px' }}>
             <div style={{ fontSize: '3rem', marginBottom: '15px' }}>{dialogConfig.isAlert ? '⚠️' : '🗑️'}</div>
             <h3 style={{ color: 'var(--primary-color)', marginBottom: '15px', fontSize: '1.4rem' }}>{dialogConfig.title}</h3>
             <p style={{ color: '#555', marginBottom: '25px', lineHeight: '1.5', fontSize: '1.05rem' }}>{dialogConfig.message}</p>
-            
+
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
               {!dialogConfig.isAlert && (
-                <button 
-                  className="btn-outline" 
-                  onClick={dialogConfig.onCancel} 
+                <button
+                  className="btn-outline"
+                  onClick={dialogConfig.onCancel}
                   style={{ flex: 1, padding: '12px', borderRadius: '12px' }}
                 >
                   Cancelar
                 </button>
               )}
-              <button 
-                className="btn-submit" 
-                onClick={dialogConfig.onConfirm} 
+              <button
+                className="btn-submit"
+                onClick={dialogConfig.onConfirm}
                 style={{ flex: 1, padding: '12px', borderRadius: '12px', background: dialogConfig.isAlert ? 'var(--primary-color)' : '#df6b6b', border: 'none' }}
               >
                 {dialogConfig.isAlert ? 'Entendido' : 'Sim, Excluir'}
@@ -206,7 +217,8 @@ export default function Feed({ currentUser, onOpenChat, refreshKey }) {
               border: '1px solid #ddd'
             }}
           >
-            {uniqueCategories.map(function (category) {
+            <option value="todas">Todas as categorias</option>
+            {CATEGORIES.map(function (category) {
               return (
                 <option key={category} value={category}>
                   {category}
