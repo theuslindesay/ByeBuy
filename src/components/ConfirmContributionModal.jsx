@@ -347,13 +347,17 @@ export default function ConfirmContributionModal({
           </div>
 
           <div className="form-group">
-            <label>Quantidade contribuída</label>
             <input
               type="number"
               min="1"
               value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
+              onChange={(e) => {
+                // A mesma trava de segurança aqui para não bagunçar o banco
+                if (e.target.value < 1 && e.target.value !== '') return;
+                setQuantity(e.target.value);
+              }}
               placeholder="Ex.: 5"
+              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }}
             />
           </div>
 
@@ -364,6 +368,7 @@ export default function ConfirmContributionModal({
               value={thankYouNote}
               onChange={(e) => setThankYouNote(e.target.value)}
               placeholder="Ex.: Sua doação foi essencial para atender esse pedido. Obrigado!"
+              style={{ resize: 'none', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }}
             />
           </div>
 

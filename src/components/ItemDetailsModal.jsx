@@ -27,35 +27,45 @@ export default function ItemDetailsModal({ isOpen, onClose, item, onOpenChat }) 
               width: '100%',
               height: '220px',
               objectFit: 'cover',
-              background: '#f2f2f2'
+              background: '#f2f2f2',
+              display: 'block'
             }}
           />
 
           <button
+            type="button"
             className="close-modal"
             onClick={onClose}
             style={{
               position: 'absolute',
               top: '14px',
               right: '14px',
-              background: 'rgba(255,255,255,0.95)',
               width: '42px',
               height: '42px',
               borderRadius: '50%',
               border: 'none',
+              background: 'rgba(255,255,255,0.96)',
+              color: '#666',
               fontSize: '1.5rem',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              lineHeight: 1,
+              boxShadow: '0 3px 12px rgba(0,0,0,0.10)',
+              padding: 0
             }}
+            aria-label="Fechar detalhes"
           >
             ×
           </button>
         </div>
 
-        <div style={{ padding: '22px' }}>
+        <div style={{ padding: '24px' }}>
           <div
             style={{
               display: 'inline-block',
-              background: item.type === 'need' ? '#e57c7c' : '#7DA4C7',
+              background: item.type === 'need' ? '#e57c7c' : 'var(--primary-color)',
               color: '#fff',
               padding: '7px 14px',
               borderRadius: '999px',
@@ -67,31 +77,57 @@ export default function ItemDetailsModal({ isOpen, onClose, item, onOpenChat }) 
             {item.type === 'need' ? 'Pedido da ONG' : 'Doação'}
           </div>
 
-          <h2 style={{ color: 'var(--primary-color)', marginBottom: '14px' }}>
+          <h2 style={{ color: 'var(--primary-color)', margin: '0 0 16px 0' }}>
             {item.title}
           </h2>
 
-          <p style={{ marginBottom: '10px', color: '#555' }}>
-            <strong>ONG / Doador:</strong> {item.users?.name || 'Desconhecido'}
-          </p>
+          <div
+            style={{
+              background: '#fafbfd',
+              border: '1px solid #edf1f5',
+              borderRadius: '16px',
+              padding: '16px',
+              marginBottom: '18px'
+            }}
+          >
+            <p style={{ margin: '0 0 10px 0', color: '#555', lineHeight: '1.5' }}>
+              <strong>ONG / Doador:</strong> {item.users?.name || 'Desconhecido'}
+            </p>
 
-          <p style={{ marginBottom: '10px', color: '#555' }}>
-            <strong>Bairro:</strong> {item.users?.bairro || 'Não informado'}
-          </p>
+            <p style={{ margin: '0 0 10px 0', color: '#555', lineHeight: '1.5' }}>
+              <strong>Bairro:</strong> {item.users?.bairro || 'Não informado'}
+            </p>
 
-          <p style={{ marginBottom: '10px', color: '#555' }}>
-            <strong>Código único:</strong> {item.item_code || 'Sem código'}
-          </p>
+            <p style={{ margin: '0 0 10px 0', color: '#555', lineHeight: '1.5' }}>
+              <strong>Código único:</strong> {item.item_code || 'Sem código'}
+            </p>
 
-          <p style={{ marginBottom: '10px', color: '#555' }}>
-            <strong>Categoria:</strong> {item.category || 'Não informada'}
-          </p>
+            <p style={{ margin: 0, color: '#555', lineHeight: '1.5' }}>
+              <strong>Categoria:</strong> {item.category || 'Não informada'}
+            </p>
+          </div>
+
+          {item.type === 'donation' && (
+            <div
+              style={{
+                background: '#fafbfd',
+                border: '1px solid #edf1f5',
+                borderRadius: '16px',
+                padding: '16px',
+                marginBottom: '18px'
+              }}
+            >
+              <p style={{ margin: 0, color: '#555', lineHeight: '1.5' }}>
+                <strong>Condição:</strong> {item.condition || 'Não informada'}
+              </p>
+            </div>
+          )}
 
           {item.type === 'need' && (
             <>
-              <p style={{ marginBottom: '10px', color: '#555' }}>
-                <strong>Motivo da solicitação:</strong>
-              </p>
+              <div style={{ marginBottom: '10px', color: '#555', fontWeight: '700' }}>
+                Motivo da solicitação
+              </div>
 
               <div
                 style={{
@@ -101,7 +137,8 @@ export default function ItemDetailsModal({ isOpen, onClose, item, onOpenChat }) 
                   padding: '16px',
                   marginBottom: '18px',
                   lineHeight: '1.6',
-                  color: '#555'
+                  color: '#555',
+                  whiteSpace: 'pre-wrap'
                 }}
               >
                 {item.reason || 'A ONG não informou uma descrição para este pedido ainda.'}
@@ -125,13 +162,13 @@ export default function ItemDetailsModal({ isOpen, onClose, item, onOpenChat }) 
                   style={{
                     width: `${progressPercent}%`,
                     height: '100%',
-                    background: '#7DA4C7',
+                    background: 'var(--primary-color)',
                     borderRadius: '999px'
                   }}
                 />
               </div>
 
-              <p style={{ marginBottom: '22px', color: '#555' }}>
+              <p style={{ margin: '0 0 22px 0', color: '#555', lineHeight: '1.5' }}>
                 <strong>Arrecadado:</strong> {item.current_amount || 0} de {item.total_needed || 0}
               </p>
             </>
@@ -140,7 +177,7 @@ export default function ItemDetailsModal({ isOpen, onClose, item, onOpenChat }) 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <button
               className="btn-submit"
-              style={{ width: 'auto', padding: '12px 22px' }}
+              style={{ width: 'auto', padding: '12px 22px', marginTop: 0 }}
               onClick={() => {
                 onClose();
                 onOpenChat(item);
@@ -151,7 +188,7 @@ export default function ItemDetailsModal({ isOpen, onClose, item, onOpenChat }) 
 
             <button
               className="btn-outline"
-              style={{ width: 'auto', padding: '12px 22px' }}
+              style={{ width: 'auto', padding: '12px 22px', marginTop: 0 }}
               onClick={onClose}
             >
               Fechar
