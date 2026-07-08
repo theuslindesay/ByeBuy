@@ -44,10 +44,12 @@ export default function CreateItemModal({ isOpen, onClose, currentUser, onCreate
         img.onload = () => {
           const canvas = document.createElement('canvas');
           let { width, height } = img;
+
           if (width > 800) {
             height *= 800 / width;
             width = 800;
           }
+
           canvas.width = width;
           canvas.height = height;
           canvas.getContext('2d').drawImage(img, 0, 0, width, height);
@@ -58,7 +60,13 @@ export default function CreateItemModal({ isOpen, onClose, currentUser, onCreate
   };
 
   const resetForm = () => {
-    setFormData({ title: '', category: '', condition: 'Novo', total: '', reason: '' });
+    setFormData({
+      title: '',
+      category: '',
+      condition: 'Novo',
+      total: '',
+      reason: ''
+    });
     setImageFile(null);
   };
 
@@ -103,82 +111,94 @@ export default function CreateItemModal({ isOpen, onClose, currentUser, onCreate
 
     setLoading(true);
 
-    const base64Img = await compressImage(imageFile);
+    try {
+      const base64Img = await compressImage(imageFile);
 
-    const dbData = {
-      title: formData.title,
-      category: formData.category,
-      owner_uid: currentUser.id,
-      image: base64Img,
-      status: 'active',
-      item_code: Math.random().toString(36).substring(2, 7).toUpperCase(),
-      type: isOng ? 'need' : 'donation',
-      condition: isOng ? null : formData.condition,
-      total_needed: isOng ? parsedTotal : null,
-      current_amount: isOng ? 0 : null,
-      reason: isOng ? formData.reason.trim() : null
-    };
+      const dbData = {
+        title: formData.title.trim(),
+        category: formData.category,
+        owner_uid: currentUser.id,
+        image: base64Img,
+        status: 'active',
+        item_code: Math.random().toString(36).substring(2, 7).toUpperCase(),
+        type: isOng ? 'need' : 'donation',
+        condition: isOng ? null : formData.condition,
+        total_needed: isOng ? parsedTotal : null,
+        current_amount: isOng ? 0 : null,
+        reason: isOng ? formData.reason.trim() : null
+      };
 
-    const { error } = await supabase.from('items').insert([dbData]);
+      const { error } = await supabase.from('items').insert([dbData]);
 
-    setLoading(false);
+      if (error) {
+        alert('Erro: ' + error.message);
+        return;
+      }
 
-    if (error) {
-      alert('Erro: ' + error.message);
-      return;
+      alert('Publicado com sucesso!');
+      resetForm();
+      onCreated();
+      onClose();
+    } catch (error) {
+      alert('Erro ao publicar: ' + error.message);
+    } finally {
+      setLoading(false);
     }
-
-    alert('Publicado com sucesso!');
-    resetForm();
-    onCreated();
-    onClose();
   };
 
   return (
     <div className="modal">
       <div className="modal-content" style={{ maxWidth: '560px' }}>
-        <button className="close-modal" onClick={handleClose}>
+        <span
+          className="close-modal"
+          onClick={handleClose}
+          style={{ background: 'none', border: 'none', lineHeight: 1 }}
+        >
           ×
-        </button>
+        </span>
 
-        <h2 style={{ marginBottom: '8px' }}>
+        <h2 style={{ margin: '0 0 8px 0', color: 'var(--primary-color)' }}>
           {isOng ? 'Solicitar Doação' : 'Desapegar (Anunciar)'}
         </h2>
 
-        <p style={{ color: '#666', marginBottom: '20px' }}>
+        <p style={{ color: '#666', margin: '0 0 22px 0', lineHeight: '1.5' }}>
           {isOng
             ? 'Descreva o que sua instituição precisa para que doadores possam ajudar.'
             : 'Conte um pouco sobre o item que você quer doar.'}
         </p>
 
         <form onSubmit={handleSubmit}>
-          <label>Título</label>
-          <input
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            placeholder={isOng ? 'Ex: Cestas básicas para famílias' : 'Ex: Sofá de 3 lugares'}
-            required
-          />
+          <div className="form-group">
+            <label>Título</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              placeholder={isOng ? 'Ex: Cestas básicas para famílias' : 'Ex: Sofá de 3 lugares'}
+              required
+            />
+          </div>
 
-          <label>Categoria</label>
-          <select
-            name="category"
-            value={formData.category}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Selecione uma categoria...</option>
-            {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+          <div className="form-group">
+            <label>Categoria</label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Selecione uma categoria...</option>
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {!isOng && (
-            <>
+            <div className="form-group">
               <label>Condição</label>
               <select
                 name="condition"
@@ -189,45 +209,56 @@ export default function CreateItemModal({ isOpen, onClose, currentUser, onCreate
                 <option value="Usado - Bom estado">Usado - Bom estado</option>
                 <option value="Usado - Precisa de reparo">Usado - Precisa de reparo</option>
               </select>
-            </>
+            </div>
           )}
 
           {isOng && (
             <>
-              <label>Meta (quantidade necessária)</label>
-              <input
-                type="number"
-                name="total"
-                value={formData.total}
-                onChange={handleChange}
-                min="1"
-                step="1"
-                placeholder="Ex: 50"
-                required
-              />
+              <div className="form-group">
+                <label>Meta (quantidade necessária)</label>
+                <input
+                  type="number"
+                  name="total"
+                  value={formData.total}
+                  onChange={handleChange}
+                  min="1"
+                  step="1"
+                  placeholder="Ex: 50"
+                  required
+                />
+              </div>
 
-              <label>Motivo do Pedido</label>
-              <textarea
-                name="reason"
-                value={formData.reason}
-                onChange={handleChange}
-                rows="4"
-                placeholder="Explique por que sua instituição precisa desses itens..."
-                style={{ resize: 'none' }}
-                required
-              />
+              <div className="form-group">
+                <label>Motivo do Pedido</label>
+                <textarea
+                  name="reason"
+                  value={formData.reason}
+                  onChange={handleChange}
+                  rows="4"
+                  placeholder="Explique por que sua instituição precisa desses itens..."
+                  style={{ resize: 'none' }}
+                  required
+                />
+              </div>
             </>
           )}
 
-          <label>Foto</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-            required
-          />
+          <div className="form-group">
+            <label>Foto</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+              required
+            />
+          </div>
 
-          <button type="submit" className="btn-submit" disabled={loading} style={{ marginTop: '16px' }}>
+          <button
+            type="submit"
+            className="btn-submit"
+            disabled={loading}
+            style={{ marginTop: '10px' }}
+          >
             {loading ? 'Publicando...' : 'Publicar'}
           </button>
         </form>

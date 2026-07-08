@@ -22,7 +22,6 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdated }) {
     total: '',
     reason: ''
   });
-
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -35,7 +34,13 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdated }) {
         reason: item.reason || ''
       });
     } else if (!isOpen) {
-      setFormData({ title: '', category: '', condition: 'Novo', total: '', reason: '' });
+      setFormData({
+        title: '',
+        category: '',
+        condition: 'Novo',
+        total: '',
+        reason: ''
+      });
     }
   }, [isOpen, item]);
 
@@ -46,6 +51,10 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdated }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleClose = () => {
+    onClose();
   };
 
   const handleSubmit = async (e) => {
@@ -61,7 +70,7 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdated }) {
       return;
     }
 
-    let parsedTotal = item.total_needed;
+    let parsedTotal = null;
 
     if (isOng) {
       parsedTotal = parseInt(formData.total, 10);
@@ -79,72 +88,86 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdated }) {
 
     setLoading(true);
 
-    const updateData = {
-      title: formData.title,
-      category: formData.category,
-      condition: isOng ? null : formData.condition,
-      total_needed: isOng ? parsedTotal : null,
-      reason: isOng ? formData.reason.trim() : null
-    };
+    try {
+      const updateData = {
+        title: formData.title.trim(),
+        category: formData.category,
+        condition: isOng ? null : formData.condition,
+        total_needed: isOng ? parsedTotal : null,
+        reason: isOng ? formData.reason.trim() : null
+      };
 
-    const { error } = await supabase
-      .from('items')
-      .update(updateData)
-      .eq('id', item.id);
+      const { error } = await supabase
+        .from('items')
+        .update(updateData)
+        .eq('id', item.id);
 
-    setLoading(false);
+      if (error) {
+        alert('Erro ao atualizar: ' + error.message);
+        return;
+      }
 
-    if (error) {
-      alert('Erro ao atualizar: ' + error.message);
-      return;
+      if (onUpdated) onUpdated();
+      onClose();
+    } catch (error) {
+      alert('Ocorreu um erro ao atualizar o item. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
-
-    if (onUpdated) onUpdated();
-    onClose();
   };
 
   return (
     <div className="modal">
       <div className="modal-content" style={{ maxWidth: '560px' }}>
-        <button className="close-modal" onClick={onClose}>
+        <span
+          className="close-modal"
+          onClick={handleClose}
+          style={{ background: 'none', border: 'none', lineHeight: 1 }}
+        >
           ×
-        </button>
+        </span>
 
-        <h2 style={{ marginBottom: '8px' }}>Editar Publicação</h2>
+        <h2 style={{ margin: '0 0 8px 0', color: 'var(--primary-color)' }}>
+          Editar Publicação
+        </h2>
 
-        <p style={{ color: '#666', marginBottom: '20px' }}>
+        <p style={{ color: '#666', margin: '0 0 22px 0', lineHeight: '1.5' }}>
           {isOng
             ? 'Atualize as informações do pedido da sua instituição.'
             : 'Atualize as informações do item que você está doando.'}
         </p>
 
         <form onSubmit={handleSubmit}>
-          <label>Título</label>
-          <input
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            required
-          />
+          <div className="form-group">
+            <label>Título</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-          <label>Categoria</label>
-          <select
-            name="category"
-            value={formData.category}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Selecione uma categoria...</option>
-            {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+          <div className="form-group">
+            <label>Categoria</label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Selecione uma categoria...</option>
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {!isOng && (
-            <>
+            <div className="form-group">
               <label>Condição</label>
               <select
                 name="condition"
@@ -155,43 +178,47 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdated }) {
                 <option value="Usado - Bom estado">Usado - Bom estado</option>
                 <option value="Usado - Precisa de reparo">Usado - Precisa de reparo</option>
               </select>
-            </>
+            </div>
           )}
 
           {isOng && (
             <>
-              <label>Meta (quantidade necessária)</label>
-              <input
-                type="number"
-                name="total"
-                value={formData.total}
-                onChange={handleChange}
-                min="1"
-                step="1"
-                placeholder="Ex: 50"
-                required
-              />
+              <div className="form-group">
+                <label>Meta (quantidade necessária)</label>
+                <input
+                  type="number"
+                  name="total"
+                  value={formData.total}
+                  onChange={handleChange}
+                  min="1"
+                  step="1"
+                  placeholder="Ex: 50"
+                  required
+                />
+              </div>
 
-              <label>Motivo do Pedido</label>
-              <textarea
-                name="reason"
-                value={formData.reason}
-                onChange={handleChange}
-                rows="4"
-                placeholder="Explique por que sua instituição precisa desses itens..."
-                style={{ resize: 'none' }}
-                required
-              />
+              <div className="form-group">
+                <label>Motivo do Pedido</label>
+                <textarea
+                  name="reason"
+                  value={formData.reason}
+                  onChange={handleChange}
+                  rows="4"
+                  placeholder="Explique por que sua instituição precisa desses itens..."
+                  style={{ resize: 'none' }}
+                  required
+                />
+              </div>
             </>
           )}
 
-          <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
             <button
               type="button"
               className="btn-outline"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={loading}
-              style={{ flex: 1, padding: '13px' }}
+              style={{ flex: 1, padding: '12px' }}
             >
               Cancelar
             </button>
@@ -200,7 +227,7 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdated }) {
               type="submit"
               className="btn-submit"
               disabled={loading}
-              style={{ flex: 1, padding: '13px' }}
+              style={{ flex: 1, padding: '12px', marginTop: 0 }}
             >
               {loading ? 'Salvando...' : 'Salvar Alterações'}
             </button>
